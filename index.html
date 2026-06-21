@@ -228,11 +228,27 @@
         .cmp-pct { font-size: 46px; font-weight: 900; line-height: 1; margin-bottom: 4px; }
         .cmp-pct.c-red   { color: #E53E3E; }
         .cmp-pct.c-green { color: #06C755; }
-        .cmp-sub { font-size: 12px; color: #888; }
+        .cmp-sub { font-size: 12px; color: #888; margin-bottom: 10px; }
         .cmp-sub b { color: #1a1a1a; }
+        .cmp-sales-lbl { font-size: 10px; font-weight: bold; letter-spacing: 0.5px; margin-bottom: 3px; }
+        .cmp-sales-lbl.c-red   { color: #E53E3E; }
+        .cmp-sales-lbl.c-green { color: #06C755; }
+        .cmp-sales { font-size: 26px; font-weight: 900; line-height: 1.1; }
+        .cmp-sales.c-red   { color: #E53E3E; }
+        .cmp-sales.c-green { color: #06C755; }
+        .cmp-sales-unit { font-size: 12px; font-weight: normal; color: #aaa; margin-left: 2px; }
         .compare-arrow { text-align: center; font-size: 20px; color: #ddd; }
         .cmp-slider-area { margin-top: 10px; }
         .cmp-slider-lbl { font-size: 10px; color: #06C755; font-weight: bold; margin-bottom: 4px; }
+        .diff-bar {
+            background: #FFF5F5; border: 1.5px solid #FEB2B2;
+            border-radius: 12px; padding: 14px 16px;
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 16px; gap: 10px;
+        }
+        .diff-bar-lbl { font-size: 12px; color: #E53E3E; font-weight: bold; flex-shrink: 0; }
+        .diff-bar-val { font-size: 28px; font-weight: 900; color: #E53E3E; }
+        .diff-bar-sub { font-size: 11px; color: #aaa; text-align: right; line-height: 1.4; }
         .loss-box-wrap {
             background: #FFF5F5; border: 1.5px solid #FEB2B2;
             border-radius: 14px; padding: 18px;
@@ -473,15 +489,19 @@
 
         <div class="compare-wrap">
             <div class="compare-side current">
-                <div class="cmp-lbl c-red">現状（設定値）</div>
+                <div class="cmp-lbl c-red">今のまま</div>
                 <div class="cmp-pct c-red" id="cmp-cur-pct">20%</div>
-                <div class="cmp-sub">月間ファン <b id="cmp-cur-fans">3</b>人</div>
+                <div class="cmp-sub">月間新規ファン <b id="cmp-cur-fans">3</b>人</div>
+                <div class="cmp-sales-lbl c-red">月間ファン売上</div>
+                <div class="cmp-sales c-red" id="cmp-cur-sales">¥15,000<span class="cmp-sales-unit">/月</span></div>
             </div>
             <div class="compare-arrow">→</div>
             <div class="compare-side ideal">
-                <div class="cmp-lbl c-green">目標値（スライダーで設定）</div>
+                <div class="cmp-lbl c-green">目標達成後</div>
                 <div class="cmp-pct c-green" id="cmp-tgt-pct">40%</div>
-                <div class="cmp-sub">月間ファン <b id="cmp-tgt-fans">6</b>人</div>
+                <div class="cmp-sub">月間新規ファン <b id="cmp-tgt-fans">6</b>人</div>
+                <div class="cmp-sales-lbl c-green">月間ファン売上</div>
+                <div class="cmp-sales c-green" id="cmp-tgt-sales">¥30,000<span class="cmp-sales-unit">/月</span></div>
                 <div class="cmp-slider-area">
                     <div class="cmp-slider-lbl">目標 2回目来店率</div>
                     <input type="range" id="s2ideal" class="tr-high" min="0" max="60" value="40" step="1">
@@ -490,10 +510,16 @@
             </div>
         </div>
 
+        <div class="diff-bar">
+            <div class="diff-bar-lbl">毎月の差額<br>（今の損失）</div>
+            <div class="diff-bar-val" id="diff-monthly">—</div>
+            <div class="diff-bar-sub" id="diff-monthly-sub">目標来店率を現状より<br>高く設定してください</div>
+        </div>
+
         <div class="risk-monthly">
-            <div class="risk-monthly-lbl">現状を続けることで 毎月 失い続けている LTV（機会損失）</div>
+            <div class="risk-monthly-lbl">このまま放置すると… 累積機会損失はどんどん膨らみます</div>
             <div class="risk-monthly-val" id="risk-m-val">—</div>
-            <div class="risk-monthly-sub" id="risk-m-sub">目標来店率を上回る値を設定してください</div>
+            <div class="risk-monthly-sub" id="risk-m-sub">毎月の差額 × ファン1人あたりのLTV（継続期間含む）</div>
         </div>
 
         <div class="timeline-title">このまま放置し続けると… 累積機会損失はどんどん膨らみます</div>
@@ -726,19 +752,31 @@
         // 損失比較
         const r2ideal = parseInt(elS2ideal.value);
         const n4ideal = n1 * r2ideal/100 * r3/100 * r4/100;
+        const curSales = n4 * price * freq;
+        const tgtSales = n4ideal * price * freq;
+        const diffSales = Math.max(tgtSales - curSales, 0);
+
         document.getElementById('cmp-cur-pct').textContent  = r2 + '%';
         document.getElementById('cmp-tgt-pct').textContent  = r2ideal + '%';
         document.getElementById('cmp-cur-fans').textContent = r1(n4);
         document.getElementById('cmp-tgt-fans').textContent = r1(n4ideal);
+        document.getElementById('cmp-cur-sales').innerHTML  = fmtYenFull(curSales) + '<span class="cmp-sales-unit">/月</span>';
+        document.getElementById('cmp-tgt-sales').innerHTML  = fmtYenFull(tgtSales) + '<span class="cmp-sales-unit">/月</span>';
+
         const ip = (r2ideal / 60 * 100).toFixed(1);
         elS2ideal.style.background = `linear-gradient(to right, #06C755 ${ip}%, #e0e0e0 ${ip}%)`;
 
         const lostM    = Math.max(n4ideal - n4, 0);
         const lostMoLTV = lostM * ltvPer;
 
+        document.getElementById('diff-monthly').textContent = diffSales > 0 ? fmtYenFull(diffSales) : '¥0';
+        document.getElementById('diff-monthly-sub').textContent = diffSales > 0
+            ? `毎月 ${r1(lostM)}人 分のファン売上を逃しています`
+            : '目標来店率を現状より高く設定してください';
+
         document.getElementById('risk-m-val').textContent = lostMoLTV > 0 ? fmtYen(lostMoLTV) : '¥0';
         document.getElementById('risk-m-sub').textContent = lostM > 0
-            ? `毎月 ${r1(lostM)}人 のファンを逃し続けています`
+            ? `毎月 ${r1(lostM)}人 × LTV ${fmtYen(ltvPer)} の損失`
             : '目標を現状より高く設定すると損失が表示されます';
 
         document.getElementById('tl-3').textContent  = lostMoLTV > 0 ? fmtYen(lostMoLTV * 3)  : '—';
